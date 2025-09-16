@@ -3,10 +3,8 @@ package com.kelunik.dag;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.*;
 
@@ -14,11 +12,13 @@ public final class TaskList {
 
     private final Collection<Task<?>> tasks = new ArrayList<>();
 
-    public void run(ExecutorService executor) {
-        Map<Task<?>, CompletableFuture<?>> futures = new ConcurrentHashMap<>();
+    public TaskListRun run(ExecutorService executor) {
+        TaskListRun taskListRun = new TaskListRun();
 
         try {
-            CompletableFuture.allOf(tasks.stream().map(task -> Runner.run(task, futures, executor)).toArray(CompletableFuture[]::new)).join();
+            CompletableFuture.allOf(tasks.stream().map(task -> Runner.run(task, taskListRun, executor)).toArray(CompletableFuture[]::new)).join();
+
+            return taskListRun;
         } catch (CompletionException completionException) {
             throw Runner.unwrapCompletionException(completionException);
         }

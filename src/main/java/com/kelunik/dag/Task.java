@@ -1,10 +1,7 @@
 package com.kelunik.dag;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
@@ -28,10 +25,10 @@ public final class Task<R> {
     }
 
     public R run(ExecutorService executor) {
-        Map<Task<?>, CompletableFuture<?>> futures = new ConcurrentHashMap<>();
+        TaskListRun taskListRun = new TaskListRun();
 
         try {
-            return Runner.run(this, futures, executor).join();
+            return Runner.run(this, taskListRun, executor).join();
         } catch (CompletionException completionException) {
             throw Runner.unwrapCompletionException(completionException);
         }

@@ -3,12 +3,15 @@ package com.kelunik.dag;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -78,12 +81,21 @@ class TaskListTest {
             return Integer.sum(a, b);
         });
 
-        tasks.add("d", () -> {
+        Task<Void> t4 = tasks.add("d", () -> {
+            try {
+                Thread.sleep(1000L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
             tasksRun.add("d");
         });
 
-        tasks.run(executor);
+        TaskListRun run = tasks.run(executor);
 
         assertThat(tasksRun).containsExactlyInAnyOrder("a", "b", "c", "d");
+        assertThat(run.taskList.values().stream().sorted(Comparator.comparing(taskRun -> taskRun.getTiming().getQueued())).map(taskRun -> taskRun.getTask().getId()).collect(Collectors.joining(" > "))).isEqualTo("a > b > c > d");
+        assertThat(Duration.between(run.taskList.get(t4).getTiming().getStarted(), run.taskList.get(t4).getTiming().getFinished())).isGreaterThanOrEqualTo(Duration.ofSeconds(1));
+        assertThat(Duration.between(run.taskList.get(t4).getTiming().getStarted(), run.taskList.get(t4).getTiming().getFinished())).isLessThan(Duration.ofSeconds(2));
     }
 }
